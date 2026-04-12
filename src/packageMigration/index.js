@@ -2,11 +2,26 @@ import { writeFileSync } from 'fs';
 import { migrateCorePackages } from './coreDeps.js';
 import { addEmotionDependencies } from './emotionDeps.js';
 import { migrateThirdPartyPackages } from './thirdPartyDeps.js';
+import { migrateV6CorePackages } from './v6Deps.js';
+import { migrateV7CorePackages } from './v7Deps.js';
 
 /**
  * Orchestrates all package.json migrations.
  */
 export function migratePackageJson(scanResult, options = {}) {
+  if (options.migrationVersion === 'v6-to-v7') {
+    return migratePackageJsonV7(scanResult, options);
+  }
+  if (options.migrationVersion === 'v5-to-v6') {
+    return migratePackageJsonV6(scanResult, options);
+  }
+  return migratePackageJsonV45(scanResult, options);
+}
+
+/**
+ * v4 → v5 package migration (original logic).
+ */
+function migratePackageJsonV45(scanResult, options = {}) {
   const allChanges = [];
   const allWarnings = [...scanResult.warnings];
 
@@ -30,7 +45,62 @@ export function migratePackageJson(scanResult, options = {}) {
 
   // Write the updated package.json
   if (!options.dryRun) {
-    // Detect original indentation
+    const indent = detectIndent(scanResult.raw);
+    const newContent = JSON.stringify(currentPkg, null, indent) + '\n';
+    writeFileSync(scanResult.packageJsonPath, newContent, 'utf-8');
+  }
+
+  return {
+    changes: allChanges,
+    warnings: allWarnings,
+    packageJson: currentPkg,
+  };
+}
+
+/**
+ * v6 → v7 package migration: bumps versions, no renames.
+ */
+function migratePackageJsonV7(scanResult, options = {}) {
+  const allChanges = [];
+  const allWarnings = [...(scanResult.warnings || [])];
+
+  let currentPkg = scanResult.packageJson;
+
+  const v7Result = migrateV7CorePackages(currentPkg, scanResult);
+  currentPkg = v7Result.packageJson;
+  allChanges.push(...v7Result.changes);
+  allWarnings.push(...(v7Result.warnings || []));
+
+  if (!options.dryRun) {
+    const indent = detectIndent(scanResult.raw);
+    const newContent = JSON.stringify(currentPkg, null, indent) + '\n';
+    writeFileSync(scanResult.packageJsonPath, newContent, 'utf-8');
+  }
+
+  return {
+    changes: allChanges,
+    warnings: allWarnings,
+    packageJson: currentPkg,
+  };
+}
+
+/**
+ * v5 → v6 package migration: bumps versions, no renames, skips emotion step.
+ */
+function migratePackageJsonV6(scanResult, options = {}) {
+  const allChanges = [];
+  const allWarnings = [...(scanResult.warnings || [])];
+
+  let currentPkg = scanResult.packageJson;
+
+  // Bump @mui/* package versions to v6/v7 targets
+  const v6Result = migrateV6CorePackages(currentPkg, scanResult);
+  currentPkg = v6Result.packageJson;
+  allChanges.push(...v6Result.changes);
+  allWarnings.push(...(v6Result.warnings || []));
+
+  // Write the updated package.json
+  if (!options.dryRun) {
     const indent = detectIndent(scanResult.raw);
     const newContent = JSON.stringify(currentPkg, null, indent) + '\n';
     writeFileSync(scanResult.packageJsonPath, newContent, 'utf-8');

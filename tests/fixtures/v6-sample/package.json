@@ -1,0 +1,16 @@
+{
+  "name": "v6-sample-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "@mui/material": "^6.0.0",
+    "@mui/system": "^6.0.0",
+    "@mui/icons-material": "^6.0.0",
+    "@mui/lab": "^6.0.0",
+    "@mui/utils": "^6.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.8.0"
+  }
+}
