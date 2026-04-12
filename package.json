@@ -1,7 +1,7 @@
 {
   "name": "react-mui-version-upgrader",
   "version": "1.0.0",
-  "description": "MUI v4 to v5 automatic migration tool",
+  "description": "MUI automatic migration tool (v4→v5, v5→v6, v6→v7, v7→v8/v9)",
   "type": "module",
   "main": "src/index.js",
   "bin": {

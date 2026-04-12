@@ -146,12 +146,14 @@ function writeReportFile(targetPath, report, migrationVersion = 'v4-to-v5') {
   mkdirSync(reportDir, { recursive: true });
 
   const suffix =
+    migrationVersion === 'v7-to-v8' ? 'v7-v8' :
     migrationVersion === 'v6-to-v7' ? 'v6-v7' :
     migrationVersion === 'v5-to-v6' ? 'v5-v6' : 'v4-v5';
   const reportPath = join(reportDir, `migration-report-${suffix}.json`);
   writeFileSync(reportPath, JSON.stringify(report, null, 2), 'utf-8');
 
   const label =
+    migrationVersion === 'v7-to-v8' ? 'v7 → v8/v9' :
     migrationVersion === 'v6-to-v7' ? 'v6 → v7' :
     migrationVersion === 'v5-to-v6' ? 'v5 → v6' : 'v4 → v5';
 

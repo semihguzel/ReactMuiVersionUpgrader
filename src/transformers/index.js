@@ -7,6 +7,9 @@ import { v6TransformerPipeline } from './v6/index.js';
 // v7 transformer pipeline
 import { v7TransformerPipeline } from './v7/index.js';
 
+// v8 transformer pipeline
+import { v8TransformerPipeline } from './v8/index.js';
+
 // Import transformers
 import { transformPackageRenames } from './imports/packageRename.js';
 import { transformLabToCore } from './imports/labToCore.js';
@@ -66,6 +69,7 @@ const transformerPipeline = [
 export async function runTransformers(files, options = {}) {
   const skip = new Set(options.skip || []);
   const pipeline =
+    options.migrationVersion === 'v7-to-v8' ? v8TransformerPipeline :
     options.migrationVersion === 'v6-to-v7' ? v7TransformerPipeline :
     options.migrationVersion === 'v5-to-v6' ? v6TransformerPipeline :
     transformerPipeline;
