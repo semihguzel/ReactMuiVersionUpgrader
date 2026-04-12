@@ -2,6 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { transformCreateTheme } from '../../src/transformers/theme/createTheme.js';
 import { transformPaletteMode } from '../../src/transformers/theme/paletteMode.js';
 import { transformFadeToAlpha } from '../../src/transformers/theme/fadeToAlpha.js';
+import { transformThemeStructure } from '../../src/transformers/theme/themeStructure.js';
 
 describe('createTheme transformer', () => {
   it('should rename createMuiTheme to createTheme', () => {
@@ -63,6 +64,85 @@ describe('fadeToAlpha transformer', () => {
   it('should not rename fade if not from MUI', () => {
     const input = `import { fade } from 'my-lib';\nfade('#000', 0.5);`;
     const result = transformFadeToAlpha(input, 'test.js');
+    expect(result.changed).toBe(false);
+  });
+});
+
+describe('themeStructure transformer', () => {
+  it('should transform props block to components.defaultProps', () => {
+    const input = `const theme = createTheme({
+  props: {
+    MuiButton: { disableRipple: true },
+  },
+});`;
+    const result = transformThemeStructure(input, 'theme.js');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('components:');
+    expect(result.source).toContain('MuiButton:');
+    expect(result.source).toContain('defaultProps:');
+    expect(result.source).toContain('disableRipple: true');
+    expect(result.source).not.toContain('props:');
+  });
+
+  it('should transform overrides block to components.styleOverrides', () => {
+    const input = `const theme = createTheme({
+  overrides: {
+    MuiButton: { root: { color: 'red' } },
+  },
+});`;
+    const result = transformThemeStructure(input, 'theme.js');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('components:');
+    expect(result.source).toContain('styleOverrides:');
+    expect(result.source).not.toContain('overrides:');
+  });
+
+  it('should merge props and overrides for the same component', () => {
+    const input = `const theme = createTheme({
+  props: {
+    MuiButton: { disableRipple: true },
+  },
+  overrides: {
+    MuiButton: { root: { color: 'red' } },
+  },
+});`;
+    const result = transformThemeStructure(input, 'theme.js');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('defaultProps:');
+    expect(result.source).toContain('styleOverrides:');
+    expect(result.source).not.toContain('props:');
+    expect(result.source).not.toContain('overrides:');
+  });
+
+  it('should work with createMuiTheme as well', () => {
+    const input = `const theme = createMuiTheme({
+  props: {
+    MuiTextField: { variant: 'standard' },
+  },
+});`;
+    const result = transformThemeStructure(input, 'theme.js');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('components:');
+    expect(result.source).toContain('defaultProps:');
+  });
+
+  it('should not change files without createTheme context', () => {
+    const input = `const obj = {
+  props: {
+    MuiButton: { disableRipple: true },
+  },
+};`;
+    const result = transformThemeStructure(input, 'theme.js');
+    expect(result.changed).toBe(false);
+  });
+
+  it('should not change when no MuiXxx components are present', () => {
+    const input = `const theme = createTheme({
+  props: {
+    something: { value: true },
+  },
+});`;
+    const result = transformThemeStructure(input, 'theme.js');
     expect(result.changed).toBe(false);
   });
 });
