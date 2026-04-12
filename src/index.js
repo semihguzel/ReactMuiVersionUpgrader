@@ -14,6 +14,7 @@ import { generateReport } from './report/index.js';
 export async function runMigration(options) {
   const targetPath = resolve(options.targetPath);
   const verbose = options.verbose || false;
+  const migrationVersion = options.migrationVersion ?? 'v4-to-v5';
 
   // Validate target path
   if (!existsSync(targetPath)) {
@@ -27,9 +28,13 @@ export async function runMigration(options) {
   // Phase 1: Scan
   if (verbose) console.log(chalk.bold('\n📂 Phase 1: Scanning project...'));
 
-  const scanResult = analyzePackageJson(targetPath);
+  const scanResult = analyzePackageJson(targetPath, migrationVersion);
 
-  if (scanResult.muiV4Packages.length === 0 && scanResult.alreadyMigratedPackages.length === 0) {
+  const muiPackages = migrationVersion === 'v5-to-v6'
+    ? (scanResult.muiV5Packages || [])
+    : (scanResult.muiV4Packages || []);
+
+  if (muiPackages.length === 0 && scanResult.alreadyMigratedPackages.length === 0) {
     return {
       success: true,
       filesModified: 0,
@@ -41,9 +46,11 @@ export async function runMigration(options) {
   }
 
   if (verbose) {
-    console.log(`  MUI v4 packages found: ${scanResult.muiV4Packages.length}`);
-    for (const pkg of scanResult.muiV4Packages) {
-      console.log(`    - ${pkg.name}@${pkg.currentVersion} → ${pkg.newName}`);
+    const label = migrationVersion === 'v5-to-v6' ? 'MUI v5 packages found' : 'MUI v4 packages found';
+    console.log(`  ${label}: ${muiPackages.length}`);
+    for (const pkg of muiPackages) {
+      const to = pkg.newName || pkg.targetVersion || '';
+      console.log(`    - ${pkg.name}@${pkg.currentVersion}${to ? ` → ${to}` : ''}`);
     }
     if (scanResult.thirdPartyPackages.length > 0) {
       console.log(`  Third-party MUI packages: ${scanResult.thirdPartyPackages.length}`);
@@ -63,6 +70,7 @@ export async function runMigration(options) {
 
   const packageResult = migratePackageJson(scanResult, {
     dryRun: options.dryRun,
+    migrationVersion,
   });
 
   if (verbose) {
@@ -94,6 +102,7 @@ export async function runMigration(options) {
     backup: options.backup,
     skip: options.skip,
     targetPath,
+    migrationVersion,
   });
 
   // Phase 5: Generate report
@@ -101,6 +110,7 @@ export async function runMigration(options) {
 
   const reportPath = generateReport(targetPath, packageResult, transformResult, {
     dryRun: options.dryRun,
+    migrationVersion,
   });
 
   // Return summary

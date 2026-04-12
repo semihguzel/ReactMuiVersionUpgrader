@@ -1,6 +1,9 @@
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'fs';
 import { join, dirname, relative, basename } from 'path';
 
+// v6 transformer pipeline
+import { v6TransformerPipeline } from './v6/index.js';
+
 // Import transformers
 import { transformPackageRenames } from './imports/packageRename.js';
 import { transformLabToCore } from './imports/labToCore.js';
@@ -59,7 +62,8 @@ const transformerPipeline = [
  */
 export async function runTransformers(files, options = {}) {
   const skip = new Set(options.skip || []);
-  const activeTransformers = transformerPipeline.filter(t => !skip.has(t.name));
+  const pipeline = options.migrationVersion === 'v5-to-v6' ? v6TransformerPipeline : transformerPipeline;
+  const activeTransformers = pipeline.filter(t => !skip.has(t.name));
 
   const results = {
     filesProcessed: 0,

@@ -131,7 +131,7 @@ describe('Full migration integration test', () => {
   });
 
   it('should create migration report', () => {
-    const reportPath = join(tempProject, '.mui-migration-backup', 'migration-report.json');
+    const reportPath = join(tempProject, '.mui-migration-backup', 'migration-report-v4-v5.json');
     expect(existsSync(reportPath)).toBe(true);
 
     const report = JSON.parse(readFileSync(reportPath, 'utf-8'));

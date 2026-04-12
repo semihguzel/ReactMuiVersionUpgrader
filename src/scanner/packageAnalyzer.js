@@ -2,12 +2,16 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { packageMappings } from '../data/packageMappings.js';
 import { thirdPartyMappings } from '../data/thirdPartyMappings.js';
+import { v5PackageNames, v6PackageVersions, v6PeerRequirements } from '../data/v6/packageMappings.js';
 
 /**
  * Analyzes the target project's package.json to detect MUI v4 dependencies
  * and third-party packages that need upgrading.
+ *
+ * @param {string} targetPath
+ * @param {'v4-to-v5'|'v5-to-v6'} migrationVersion
  */
-export function analyzePackageJson(targetPath) {
+export function analyzePackageJson(targetPath, migrationVersion = 'v4-to-v5') {
   const packageJsonPath = join(targetPath, 'package.json');
 
   if (!existsSync(packageJsonPath)) {
@@ -22,6 +26,16 @@ export function analyzePackageJson(targetPath) {
     ...packageJson.devDependencies,
   };
 
+  if (migrationVersion === 'v5-to-v6') {
+    return analyzeForV6(packageJsonPath, raw, packageJson, allDeps);
+  }
+  return analyzeForV45(packageJsonPath, raw, packageJson, allDeps);
+}
+
+/**
+ * v4 → v5 analysis (original logic).
+ */
+function analyzeForV45(packageJsonPath, raw, packageJson, allDeps) {
   const result = {
     packageJsonPath,
     raw,
@@ -87,6 +101,60 @@ export function analyzePackageJson(targetPath) {
     ) {
       result.warnings.push(
         `Unknown @material-ui related package: ${depName}. Manual review needed.`
+      );
+    }
+  }
+
+  return result;
+}
+
+/**
+ * v5 → v6 analysis: detects @mui/* packages at ^5.x.
+ */
+function analyzeForV6(packageJsonPath, raw, packageJson, allDeps) {
+  const result = {
+    packageJsonPath,
+    raw,
+    packageJson,
+    muiV5Packages: [],
+    alreadyMigratedPackages: [],
+    warnings: [],
+  };
+
+  for (const pkgName of v5PackageNames) {
+    if (!allDeps[pkgName]) continue;
+
+    const currentVersion = allDeps[pkgName];
+    const targetVersion = v6PackageVersions[pkgName];
+    const isDev = !!packageJson.devDependencies?.[pkgName];
+
+    // Check if already on v6 (or v7 for X packages)
+    const majorTarget = parseInt((targetVersion || '^6').replace(/[\^~>=<]/, ''), 10);
+    const currentMajor = parseInt(currentVersion.replace(/[\^~>=<]/, ''), 10);
+
+    if (!isNaN(currentMajor) && currentMajor >= majorTarget) {
+      result.alreadyMigratedPackages.push({ name: pkgName, version: currentVersion });
+    } else {
+      result.muiV5Packages.push({ name: pkgName, currentVersion, targetVersion, isDev });
+    }
+  }
+
+  if (result.alreadyMigratedPackages.length > 0 && result.muiV5Packages.length > 0) {
+    result.warnings.push(
+      'Project appears to be partially migrated: some packages are already at v6/v7.'
+    );
+  }
+
+  // TypeScript version check
+  const tsVersion = allDeps['typescript'];
+  if (tsVersion) {
+    const tsMajorMinor = tsVersion.replace(/[\^~>=<]/, '').split('.').slice(0, 2).map(Number);
+    const minRequired = v6PeerRequirements.typescript.replace('>=', '').split('.').map(Number);
+    const [maj, min] = tsMajorMinor;
+    const [reqMaj, reqMin] = minRequired;
+    if (maj < reqMaj || (maj === reqMaj && min < reqMin)) {
+      result.warnings.push(
+        `TypeScript ${tsVersion} detected. MUI v6 requires TypeScript >= ${v6PeerRequirements.typescript}. Please upgrade.`
       );
     }
   }
