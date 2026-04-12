@@ -9,10 +9,10 @@ const program = new Command();
 
 program
   .name('mui-upgrader')
-  .description('MUI automatic migration tool (v4→v5 and v5→v6)')
+  .description('MUI automatic migration tool (v4→v5, v5→v6, and v6→v7)')
   .version('1.0.0')
   .requiredOption('-t, --target <path>', 'Path to the React project to migrate')
-  .option('--migration <version>', 'Migration path: "v4-to-v5" or "v5-to-v6"')
+  .option('--migration <version>', 'Migration path: "v4-to-v5", "v5-to-v6", or "v6-to-v7"')
   .option('--dry-run', 'Preview changes without modifying files', false)
   .option('--verbose', 'Show detailed logging', false)
   .option('--no-backup', 'Skip creating backup files')
@@ -30,6 +30,7 @@ program
           choices: [
             { name: 'MUI v4  →  v5  (material-ui to @mui)', value: 'v4-to-v5' },
             { name: 'MUI v5  →  v6  (upgrade to v6 API)',   value: 'v5-to-v6' },
+            { name: 'MUI v6  →  v7  (upgrade to v7 API)',   value: 'v6-to-v7' },
           ],
         },
       ]);
@@ -37,12 +38,14 @@ program
     }
 
     // Validate the flag value if provided directly
-    if (!['v4-to-v5', 'v5-to-v6'].includes(migrationVersion)) {
-      console.error(chalk.red(`\n❌ Invalid --migration value: "${migrationVersion}". Use "v4-to-v5" or "v5-to-v6".\n`));
+    if (!['v4-to-v5', 'v5-to-v6', 'v6-to-v7'].includes(migrationVersion)) {
+      console.error(chalk.red(`\n❌ Invalid --migration value: "${migrationVersion}". Use "v4-to-v5", "v5-to-v6", or "v6-to-v7".\n`));
       process.exit(1);
     }
 
-    const label = migrationVersion === 'v5-to-v6' ? 'v5 → v6' : 'v4 → v5';
+    const label =
+      migrationVersion === 'v6-to-v7' ? 'v6 → v7' :
+      migrationVersion === 'v5-to-v6' ? 'v5 → v6' : 'v4 → v5';
     console.log(chalk.bold.blue(`\n🔄 MUI ${label} Migration Tool\n`));
 
     if (options.dryRun) {
@@ -72,7 +75,15 @@ program
       }
 
       // Version-specific next steps
-      if (migrationVersion === 'v5-to-v6') {
+      if (migrationVersion === 'v6-to-v7') {
+        console.log(chalk.cyan('\n📋 Next steps for v6→v7:'));
+        console.log(chalk.white('   1. Run `npm install` (or yarn/pnpm) to install v7 packages'));
+        console.log(chalk.white('   2. Review warnings in the report — some changes need manual attention'));
+        console.log(chalk.white('   3. Audit Grid/GridLegacy usage — verify container/item props still work as expected'));
+        console.log(chalk.white('   4. If Hidden or PigmentHidden was detected, refactor with sx breakpoints or useMediaQuery'));
+        console.log(chalk.white('   5. For @mui/lab removals run: npx @mui/codemod@latest v7.0.0/lab-removed-components <path>'));
+        console.log(chalk.white('   6. Ensure TypeScript >= 4.9: https://mui.com/material-ui/migration/upgrade-to-v7/'));
+      } else if (migrationVersion === 'v5-to-v6') {
         console.log(chalk.cyan('\n📋 Next steps for v5→v6:'));
         console.log(chalk.white('   1. Run `npm install` (or yarn/pnpm) to install v6 packages'));
         console.log(chalk.white('   2. Review warnings in the report — some changes need manual attention'));

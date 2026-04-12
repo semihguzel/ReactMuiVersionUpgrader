@@ -30,9 +30,10 @@ export async function runMigration(options) {
 
   const scanResult = analyzePackageJson(targetPath, migrationVersion);
 
-  const muiPackages = migrationVersion === 'v5-to-v6'
-    ? (scanResult.muiV5Packages || [])
-    : (scanResult.muiV4Packages || []);
+  const muiPackages =
+    migrationVersion === 'v6-to-v7' ? (scanResult.muiV6Packages || []) :
+    migrationVersion === 'v5-to-v6' ? (scanResult.muiV5Packages || []) :
+                                       (scanResult.muiV4Packages || []);
 
   if (muiPackages.length === 0 && scanResult.alreadyMigratedPackages.length === 0) {
     return {
@@ -46,13 +47,16 @@ export async function runMigration(options) {
   }
 
   if (verbose) {
-    const label = migrationVersion === 'v5-to-v6' ? 'MUI v5 packages found' : 'MUI v4 packages found';
+    const label =
+      migrationVersion === 'v6-to-v7' ? 'MUI v6 packages found' :
+      migrationVersion === 'v5-to-v6' ? 'MUI v5 packages found' :
+                                         'MUI v4 packages found';
     console.log(`  ${label}: ${muiPackages.length}`);
     for (const pkg of muiPackages) {
       const to = pkg.newName || pkg.targetVersion || '';
       console.log(`    - ${pkg.name}@${pkg.currentVersion}${to ? ` → ${to}` : ''}`);
     }
-    if (scanResult.thirdPartyPackages.length > 0) {
+    if ((scanResult.thirdPartyPackages || []).length > 0) {
       console.log(`  Third-party MUI packages: ${scanResult.thirdPartyPackages.length}`);
       for (const pkg of scanResult.thirdPartyPackages) {
         console.log(`    - ${pkg.name}@${pkg.currentVersion}`);

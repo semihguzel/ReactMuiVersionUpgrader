@@ -4,6 +4,9 @@ import { join, dirname, relative, basename } from 'path';
 // v6 transformer pipeline
 import { v6TransformerPipeline } from './v6/index.js';
 
+// v7 transformer pipeline
+import { v7TransformerPipeline } from './v7/index.js';
+
 // Import transformers
 import { transformPackageRenames } from './imports/packageRename.js';
 import { transformLabToCore } from './imports/labToCore.js';
@@ -62,7 +65,10 @@ const transformerPipeline = [
  */
 export async function runTransformers(files, options = {}) {
   const skip = new Set(options.skip || []);
-  const pipeline = options.migrationVersion === 'v5-to-v6' ? v6TransformerPipeline : transformerPipeline;
+  const pipeline =
+    options.migrationVersion === 'v6-to-v7' ? v7TransformerPipeline :
+    options.migrationVersion === 'v5-to-v6' ? v6TransformerPipeline :
+    transformerPipeline;
   const activeTransformers = pipeline.filter(t => !skip.has(t.name));
 
   const results = {

@@ -3,6 +3,7 @@ import { join } from 'path';
 import { packageMappings } from '../data/packageMappings.js';
 import { thirdPartyMappings } from '../data/thirdPartyMappings.js';
 import { v5PackageNames, v6PackageVersions, v6PeerRequirements } from '../data/v6/packageMappings.js';
+import { v6PackageNamesForV7, v7PackageVersions, v7PeerRequirements } from '../data/v7/packageMappings.js';
 
 /**
  * Analyzes the target project's package.json to detect MUI v4 dependencies
@@ -26,6 +27,9 @@ export function analyzePackageJson(targetPath, migrationVersion = 'v4-to-v5') {
     ...packageJson.devDependencies,
   };
 
+  if (migrationVersion === 'v6-to-v7') {
+    return analyzeForV7(packageJsonPath, raw, packageJson, allDeps);
+  }
   if (migrationVersion === 'v5-to-v6') {
     return analyzeForV6(packageJsonPath, raw, packageJson, allDeps);
   }
@@ -101,6 +105,62 @@ function analyzeForV45(packageJsonPath, raw, packageJson, allDeps) {
     ) {
       result.warnings.push(
         `Unknown @material-ui related package: ${depName}. Manual review needed.`
+      );
+    }
+  }
+
+  return result;
+}
+
+/**
+ * v6 → v7 analysis: detects @mui/* packages at ^6.x.
+ */
+function analyzeForV7(packageJsonPath, raw, packageJson, allDeps) {
+  const result = {
+    packageJsonPath,
+    raw,
+    packageJson,
+    muiV6Packages: [],
+    alreadyMigratedPackages: [],
+    warnings: [],
+  };
+
+  for (const pkgName of v6PackageNamesForV7) {
+    if (!allDeps[pkgName]) continue;
+
+    const currentVersion = allDeps[pkgName];
+    const targetVersion = v7PackageVersions[pkgName];
+    const isDev = !!packageJson.devDependencies?.[pkgName];
+
+    // MUI X packages have no v7 target in this tool — skip bumping them
+    if (!targetVersion) continue;
+
+    const majorTarget = parseInt((targetVersion || '^7').replace(/[\^~>=<]/, ''), 10);
+    const currentMajor = parseInt(currentVersion.replace(/[\^~>=<]/, ''), 10);
+
+    if (!isNaN(currentMajor) && currentMajor >= majorTarget) {
+      result.alreadyMigratedPackages.push({ name: pkgName, version: currentVersion });
+    } else {
+      result.muiV6Packages.push({ name: pkgName, currentVersion, targetVersion, isDev });
+    }
+  }
+
+  if (result.alreadyMigratedPackages.length > 0 && result.muiV6Packages.length > 0) {
+    result.warnings.push(
+      'Project appears to be partially migrated: some packages are already at v7.'
+    );
+  }
+
+  // TypeScript version check — v7 requires >= 4.9
+  const tsVersion = allDeps['typescript'];
+  if (tsVersion) {
+    const tsMajorMinor = tsVersion.replace(/[\^~>=<]/, '').split('.').slice(0, 2).map(Number);
+    const minRequired = v7PeerRequirements.typescript.replace('>=', '').split('.').map(Number);
+    const [maj, min] = tsMajorMinor;
+    const [reqMaj, reqMin] = minRequired;
+    if (maj < reqMaj || (maj === reqMaj && min < reqMin)) {
+      result.warnings.push(
+        `TypeScript ${tsVersion} detected. MUI v7 requires TypeScript ${v7PeerRequirements.typescript}. Please upgrade.`
       );
     }
   }
