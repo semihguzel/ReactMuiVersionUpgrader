@@ -133,8 +133,7 @@ describe('v7 → v8/v9 full migration integration test', () => {
   });
 
   it('should create migration report', () => {
-    // The report module uses 'v4-v5' suffix as fallback for v7-to-v8 migrations
-    const reportPath = join(tempProject, '.mui-migration-backup', 'migration-report-v4-v5.json');
+    const reportPath = join(tempProject, '.mui-migration-backup', 'migration-report-v7-v8.json');
     expect(existsSync(reportPath)).toBe(true);
 
     const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
