@@ -4,11 +4,15 @@ import { addEmotionDependencies } from './emotionDeps.js';
 import { migrateThirdPartyPackages } from './thirdPartyDeps.js';
 import { migrateV6CorePackages } from './v6Deps.js';
 import { migrateV7CorePackages } from './v7Deps.js';
+import { migrateV8CorePackages } from './v8Deps.js';
 
 /**
  * Orchestrates all package.json migrations.
  */
 export function migratePackageJson(scanResult, options = {}) {
+  if (options.migrationVersion === 'v7-to-v8') {
+    return migratePackageJsonV8(scanResult, options);
+  }
   if (options.migrationVersion === 'v6-to-v7') {
     return migratePackageJsonV7(scanResult, options);
   }
@@ -44,6 +48,33 @@ function migratePackageJsonV45(scanResult, options = {}) {
   allWarnings.push(...(thirdPartyResult.warnings || []));
 
   // Write the updated package.json
+  if (!options.dryRun) {
+    const indent = detectIndent(scanResult.raw);
+    const newContent = JSON.stringify(currentPkg, null, indent) + '\n';
+    writeFileSync(scanResult.packageJsonPath, newContent, 'utf-8');
+  }
+
+  return {
+    changes: allChanges,
+    warnings: allWarnings,
+    packageJson: currentPkg,
+  };
+}
+
+/**
+ * v7 → v8/v9 package migration: bumps core to v9, MUI X to v8, adds x-license if needed.
+ */
+function migratePackageJsonV8(scanResult, options = {}) {
+  const allChanges = [];
+  const allWarnings = [...(scanResult.warnings || [])];
+
+  let currentPkg = scanResult.packageJson;
+
+  const v8Result = migrateV8CorePackages(currentPkg, scanResult);
+  currentPkg = v8Result.packageJson;
+  allChanges.push(...v8Result.changes);
+  allWarnings.push(...(v8Result.warnings || []));
+
   if (!options.dryRun) {
     const indent = detectIndent(scanResult.raw);
     const newContent = JSON.stringify(currentPkg, null, indent) + '\n';

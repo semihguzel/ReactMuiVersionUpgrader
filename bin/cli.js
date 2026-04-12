@@ -9,10 +9,10 @@ const program = new Command();
 
 program
   .name('mui-upgrader')
-  .description('MUI automatic migration tool (v4→v5, v5→v6, and v6→v7)')
+  .description('MUI automatic migration tool (v4→v5, v5→v6, v6→v7, and v7→v8/v9)')
   .version('1.0.0')
   .requiredOption('-t, --target <path>', 'Path to the React project to migrate')
-  .option('--migration <version>', 'Migration path: "v4-to-v5", "v5-to-v6", or "v6-to-v7"')
+  .option('--migration <version>', 'Migration path: "v4-to-v5", "v5-to-v6", "v6-to-v7", or "v7-to-v8"')
   .option('--dry-run', 'Preview changes without modifying files', false)
   .option('--verbose', 'Show detailed logging', false)
   .option('--no-backup', 'Skip creating backup files')
@@ -28,9 +28,10 @@ program
           name: 'migrationVersion',
           message: 'Which migration would you like to run?',
           choices: [
-            { name: 'MUI v4  →  v5  (material-ui to @mui)', value: 'v4-to-v5' },
-            { name: 'MUI v5  →  v6  (upgrade to v6 API)',   value: 'v5-to-v6' },
-            { name: 'MUI v6  →  v7  (upgrade to v7 API)',   value: 'v6-to-v7' },
+            { name: 'MUI v4  →  v5  (material-ui to @mui)',              value: 'v4-to-v5' },
+            { name: 'MUI v5  →  v6  (upgrade to v6 API)',                value: 'v5-to-v6' },
+            { name: 'MUI v6  →  v7  (upgrade to v7 API)',                value: 'v6-to-v7' },
+            { name: 'MUI v7  →  v8/v9  (MUI X v8 + Material UI v9)',     value: 'v7-to-v8' },
           ],
         },
       ]);
@@ -38,12 +39,13 @@ program
     }
 
     // Validate the flag value if provided directly
-    if (!['v4-to-v5', 'v5-to-v6', 'v6-to-v7'].includes(migrationVersion)) {
-      console.error(chalk.red(`\n❌ Invalid --migration value: "${migrationVersion}". Use "v4-to-v5", "v5-to-v6", or "v6-to-v7".\n`));
+    if (!['v4-to-v5', 'v5-to-v6', 'v6-to-v7', 'v7-to-v8'].includes(migrationVersion)) {
+      console.error(chalk.red(`\n❌ Invalid --migration value: "${migrationVersion}". Use "v4-to-v5", "v5-to-v6", "v6-to-v7", or "v7-to-v8".\n`));
       process.exit(1);
     }
 
     const label =
+      migrationVersion === 'v7-to-v8' ? 'v7 → v8/v9' :
       migrationVersion === 'v6-to-v7' ? 'v6 → v7' :
       migrationVersion === 'v5-to-v6' ? 'v5 → v6' : 'v4 → v5';
     console.log(chalk.bold.blue(`\n🔄 MUI ${label} Migration Tool\n`));
@@ -75,7 +77,21 @@ program
       }
 
       // Version-specific next steps
-      if (migrationVersion === 'v6-to-v7') {
+      if (migrationVersion === 'v7-to-v8') {
+        console.log(chalk.cyan('\n📋 Next steps for v7→v8/v9:'));
+        console.log(chalk.white('   1. Run `npm install` (or yarn/pnpm) to install updated packages'));
+        console.log(chalk.white('   2. Review warnings in the report — some changes need manual attention'));
+        console.log(chalk.white('   3. If @mui/x-license was added, call LicenseInfo.setLicenseKey() in your app entry point'));
+        console.log(chalk.white('      See: https://mui.com/x/introduction/licensing/'));
+        console.log(chalk.white('   4. Verify DataGrid toolbar: add `showToolbar` prop if toolbar was previously shown'));
+        console.log(chalk.white('   5. Update `rowSelectionModel` state: type changed from array to { type, ids: Set }'));
+        console.log(chalk.white('      See: https://mui.com/x/migration/migration-data-grid-v7/'));
+        console.log(chalk.white('   6. Verify slots/slotProps merges — multi-slot components may need manual adjustment'));
+        console.log(chalk.white('   7. Ensure TypeScript >= 5.0: https://mui.com/material-ui/migration/upgrade-to-v9/'));
+        console.log(chalk.white('   8. Run official codemods for any remaining issues:'));
+        console.log(chalk.white('      npx @mui/x-codemod@latest v8.0.0/preset-safe <path>'));
+        console.log(chalk.white('      npx @mui/codemod@latest deprecations/all <path>'));
+      } else if (migrationVersion === 'v6-to-v7') {
         console.log(chalk.cyan('\n📋 Next steps for v6→v7:'));
         console.log(chalk.white('   1. Run `npm install` (or yarn/pnpm) to install v7 packages'));
         console.log(chalk.white('   2. Review warnings in the report — some changes need manual attention'));

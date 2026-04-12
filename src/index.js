@@ -31,6 +31,7 @@ export async function runMigration(options) {
   const scanResult = analyzePackageJson(targetPath, migrationVersion);
 
   const muiPackages =
+    migrationVersion === 'v7-to-v8' ? (scanResult.muiV7Packages || []) :
     migrationVersion === 'v6-to-v7' ? (scanResult.muiV6Packages || []) :
     migrationVersion === 'v5-to-v6' ? (scanResult.muiV5Packages || []) :
                                        (scanResult.muiV4Packages || []);
@@ -48,6 +49,7 @@ export async function runMigration(options) {
 
   if (verbose) {
     const label =
+      migrationVersion === 'v7-to-v8' ? 'MUI v7 packages found' :
       migrationVersion === 'v6-to-v7' ? 'MUI v6 packages found' :
       migrationVersion === 'v5-to-v6' ? 'MUI v5 packages found' :
                                          'MUI v4 packages found';

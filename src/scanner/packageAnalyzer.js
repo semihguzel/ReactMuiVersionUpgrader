@@ -4,6 +4,7 @@ import { packageMappings } from '../data/packageMappings.js';
 import { thirdPartyMappings } from '../data/thirdPartyMappings.js';
 import { v5PackageNames, v6PackageVersions, v6PeerRequirements } from '../data/v6/packageMappings.js';
 import { v6PackageNamesForV7, v7PackageVersions, v7PeerRequirements } from '../data/v7/packageMappings.js';
+import { v7PackageNamesForV8, v8PackageVersions, v8PeerRequirements } from '../data/v8/packageMappings.js';
 
 /**
  * Analyzes the target project's package.json to detect MUI v4 dependencies
@@ -27,6 +28,9 @@ export function analyzePackageJson(targetPath, migrationVersion = 'v4-to-v5') {
     ...packageJson.devDependencies,
   };
 
+  if (migrationVersion === 'v7-to-v8') {
+    return analyzeForV8(packageJsonPath, raw, packageJson, allDeps);
+  }
   if (migrationVersion === 'v6-to-v7') {
     return analyzeForV7(packageJsonPath, raw, packageJson, allDeps);
   }
@@ -161,6 +165,61 @@ function analyzeForV7(packageJsonPath, raw, packageJson, allDeps) {
     if (maj < reqMaj || (maj === reqMaj && min < reqMin)) {
       result.warnings.push(
         `TypeScript ${tsVersion} detected. MUI v7 requires TypeScript ${v7PeerRequirements.typescript}. Please upgrade.`
+      );
+    }
+  }
+
+  return result;
+}
+
+/**
+ * v7 → v8/v9 analysis: detects @mui/* packages at ^7.x and MUI X at ^7.x.
+ */
+function analyzeForV8(packageJsonPath, raw, packageJson, allDeps) {
+  const result = {
+    packageJsonPath,
+    raw,
+    packageJson,
+    muiV7Packages: [],
+    alreadyMigratedPackages: [],
+    warnings: [],
+  };
+
+  for (const pkgName of v7PackageNamesForV8) {
+    if (!allDeps[pkgName]) continue;
+
+    const currentVersion = allDeps[pkgName];
+    const targetVersion = v8PackageVersions[pkgName];
+    const isDev = !!packageJson.devDependencies?.[pkgName];
+
+    if (!targetVersion) continue;
+
+    const majorTarget = parseInt((targetVersion || '^8').replace(/[\^~>=<]/, ''), 10);
+    const currentMajor = parseInt(currentVersion.replace(/[\^~>=<]/, ''), 10);
+
+    if (!isNaN(currentMajor) && currentMajor >= majorTarget) {
+      result.alreadyMigratedPackages.push({ name: pkgName, version: currentVersion });
+    } else {
+      result.muiV7Packages.push({ name: pkgName, currentVersion, targetVersion, isDev });
+    }
+  }
+
+  if (result.alreadyMigratedPackages.length > 0 && result.muiV7Packages.length > 0) {
+    result.warnings.push(
+      'Project appears to be partially migrated: some packages are already at v8/v9.'
+    );
+  }
+
+  // TypeScript version check — v8/v9 requires >= 5.0
+  const tsVersion = allDeps['typescript'];
+  if (tsVersion) {
+    const tsMajorMinor = tsVersion.replace(/[\^~>=<]/, '').split('.').slice(0, 2).map(Number);
+    const minRequired = v8PeerRequirements.typescript.replace('>=', '').split('.').map(Number);
+    const [maj, min] = tsMajorMinor;
+    const [reqMaj, reqMin] = minRequired;
+    if (maj < reqMaj || (maj === reqMaj && (min ?? 0) < (reqMin ?? 0))) {
+      result.warnings.push(
+        `TypeScript ${tsVersion} detected. MUI v8/v9 requires TypeScript ${v8PeerRequirements.typescript}. Please upgrade.`
       );
     }
   }
