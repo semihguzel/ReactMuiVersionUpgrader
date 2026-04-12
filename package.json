@@ -1,0 +1,26 @@
+{
+  "name": "react-mui-version-upgrader",
+  "version": "1.0.0",
+  "description": "MUI v4 to v5 automatic migration tool",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "mui-upgrader": "./bin/cli.js"
+  },
+  "scripts": {
+    "start": "node bin/cli.js",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest"
+  },
+  "keywords": ["mui", "material-ui", "migration", "v4", "v5", "codemod"],
+  "license": "MIT",
+  "dependencies": {
+    "jscodeshift": "^17.1.2",
+    "commander": "^12.1.0",
+    "chalk": "^5.4.1",
+    "fast-glob": "^3.3.3"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "@jest/globals": "^29.7.0"
+  }
+}
