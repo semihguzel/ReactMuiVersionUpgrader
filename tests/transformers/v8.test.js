@@ -121,6 +121,14 @@ describe('iconRenames transformer (v8)', () => {
     expect(result.source).toBe(input);
   });
 
+  it('should rename InfoOutline in TypeScript SvgIconProps type annotation', () => {
+    const input = `const icon: typeof InfoOutline = InfoOutline;`;
+    const result = transformIconRenames(input, 'test.tsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('InfoOutlined');
+    expect(result.source).not.toContain('InfoOutline\n');
+  });
+
   it('should not change file with no matching icons', () => {
     const input = `import Add from '@mui/icons-material/Add';`;
     const result = transformIconRenames(input, 'test.tsx');
@@ -242,6 +250,20 @@ describe('selectorRenames transformer (v8)', () => {
     expect(result.changed).toBe(true);
     expect(result.source).toContain('MuiSimpleTreeView');
     expect(result.source).not.toContain('MuiTreeView');
+  });
+
+  it('should rename GridListColDef in TypeScript import type statement', () => {
+    const input = `import type { GridListColDef } from '@mui/x-data-grid';`;
+    const result = transformSelectorRenames(input, 'test.tsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toBe(`import type { GridListViewColDef } from '@mui/x-data-grid';`);
+  });
+
+  it('should rename treeViewClasses used as a TypeScript type constraint', () => {
+    const input = `type Classes = typeof treeViewClasses;`;
+    const result = transformSelectorRenames(input, 'test.tsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('simpleTreeViewClasses');
   });
 
   it('should not change file with no matching identifiers', () => {
