@@ -16,8 +16,8 @@ export function transformFadeToAlpha(source, filePath) {
     return { source, changed: false, changes: [] };
   }
 
-  // Check if 'fade' is imported from MUI styles
-  const hasFadeImport = /import\s+\{[^}]*\bfade\b[^}]*\}\s+from\s+['"]@(?:material-ui\/core\/styles|mui\/material\/styles|material-ui\/core|mui\/material)['"]/.test(result);
+  // Check if 'fade' is imported from MUI styles (including the colorManipulator deep path)
+  const hasFadeImport = /import\s+\{[^}]*\bfade\b[^}]*\}\s+from\s+['"]@(?:material-ui\/core|mui\/material)(?:\/styles(?:\/colorManipulator)?)?['"]/.test(result);
 
   if (!hasFadeImport) {
     return { source, changed: false, changes: [] };

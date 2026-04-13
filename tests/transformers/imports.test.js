@@ -119,4 +119,25 @@ describe('colorImports transformer', () => {
     expect(result.changed).toBe(true);
     expect(result.source).toBe(`import { blue } from '@mui/material/colors';`);
   });
+
+  it('should fix colorManipulator deep import from v4 path', () => {
+    const input = `import { fade, lighten, darken } from '@material-ui/core/styles/colorManipulator';`;
+    const result = transformColorImports(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toBe(`import { alpha, lighten, darken } from '@mui/material/styles';`);
+  });
+
+  it('should fix colorManipulator deep import already at @mui path (packageRename already ran)', () => {
+    const input = `import { fade, emphasize } from '@mui/material/styles/colorManipulator';`;
+    const result = transformColorImports(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toBe(`import { alpha, emphasize } from '@mui/material/styles';`);
+  });
+
+  it('should fix colorManipulator import without fade (no rename needed)', () => {
+    const input = `import { lighten, darken, getContrastRatio } from '@material-ui/core/styles/colorManipulator';`;
+    const result = transformColorImports(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toBe(`import { lighten, darken, getContrastRatio } from '@mui/material/styles';`);
+  });
 });
