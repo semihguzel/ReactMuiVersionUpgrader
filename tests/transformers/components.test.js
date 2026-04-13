@@ -159,6 +159,73 @@ const dtProps: KeyboardDateTimePickerProps = {};`;
     expect(result.source).not.toContain('MuiPickersUtilsProvider');
   });
 
+  it('should rename utils prop to dateAdapter on LocalizationProvider (single-line)', () => {
+    const input = `<LocalizationProvider utils={DateFnsUtils}>`;
+    const result = transformPickerRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('dateAdapter=');
+    expect(result.source).not.toContain('utils=');
+  });
+
+  it('should rename utils prop to dateAdapter on LocalizationProvider (multi-line)', () => {
+    const input = `<LocalizationProvider\n  utils={DateFnsUtils}\n>`;
+    const result = transformPickerRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('dateAdapter=');
+    expect(result.source).not.toContain('utils=');
+  });
+
+  it('should rename utils prop when MuiPickersUtilsProvider is in the same file (renamed first)', () => {
+    const input = `<MuiPickersUtilsProvider utils={DateFnsUtils}><App /></MuiPickersUtilsProvider>`;
+    const result = transformPickerRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('LocalizationProvider');
+    expect(result.source).toContain('dateAdapter=');
+    expect(result.source).not.toContain('utils=');
+  });
+
+  it('should rewrite @date-io/date-fns default import to MUI adapter', () => {
+    const input = `import DateFnsUtils from '@date-io/date-fns';`;
+    const result = transformPickerRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain("from '@mui/x-date-pickers/AdapterDateFns'");
+    expect(result.source).toContain('AdapterDateFns');
+    expect(result.source).not.toContain("'@date-io/date-fns'");
+  });
+
+  it('should rewrite @date-io/moment default import to MUI adapter', () => {
+    const input = `import MomentUtils from '@date-io/moment';`;
+    const result = transformPickerRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain("from '@mui/x-date-pickers/AdapterMoment'");
+    expect(result.source).toContain('AdapterMoment');
+  });
+
+  it('should rename DateFnsUtils identifier to AdapterDateFns', () => {
+    const input = `<LocalizationProvider dateAdapter={DateFnsUtils}>`;
+    const result = transformPickerRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('AdapterDateFns');
+    expect(result.source).not.toContain('DateFnsUtils');
+  });
+
+  it('should handle full migration of a LocalizationProvider usage', () => {
+    const input = `import DateFnsUtils from '@date-io/date-fns';
+import { MuiPickersUtilsProvider } from '@material-ui/pickers';
+
+<MuiPickersUtilsProvider utils={DateFnsUtils}>
+  <App />
+</MuiPickersUtilsProvider>`;
+    const result = transformPickerRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('LocalizationProvider');
+    expect(result.source).toContain('dateAdapter={AdapterDateFns}');
+    expect(result.source).toContain("from '@mui/x-date-pickers/AdapterDateFns'");
+    expect(result.source).not.toContain('MuiPickersUtilsProvider');
+    expect(result.source).not.toContain('utils=');
+    expect(result.source).not.toContain('DateFnsUtils');
+  });
+
   it('should not rename plain DatePicker, TimePicker, DateTimePicker', () => {
     const input = `<DatePicker value={d} /><TimePicker value={t} /><DateTimePicker value={dt} />`;
     const result = transformPickerRenames(input, 'test.jsx');
