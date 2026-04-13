@@ -12,6 +12,12 @@
     "notistack": "^1.0.10",
     "formik-material-ui": "^3.0.1",
     "formik-material-ui-pickers": "^0.0.8",
+    "@unicef/material-ui-currency-textfield": "^0.8.6",
+    "material-ui-chip-input": "^1.0.1",
+    "material-ui-confirm": "^2.1.1",
+    "material-ui-image": "^3.3.1",
+    "material-ui-popup-state": "^4.1.1",
+    "reactour": "^1.18.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2"
   },

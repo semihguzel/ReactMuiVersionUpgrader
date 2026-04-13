@@ -71,6 +71,26 @@ describe('Full migration integration test', () => {
 
     // formik-material-ui-pickers should remain (no automatic replacement, only a warning)
     expect(pkg.dependencies['formik-material-ui-pickers']).toBeDefined();
+
+    // @unicef/material-ui-currency-textfield — no auto-fix, should remain with a warning
+    expect(pkg.dependencies['@unicef/material-ui-currency-textfield']).toBeDefined();
+
+    // material-ui-chip-input — replaced by mui-chips-input
+    expect(pkg.dependencies['material-ui-chip-input']).toBeUndefined();
+    expect(pkg.dependencies['mui-chips-input']).toBe('^2.0.0');
+
+    // material-ui-confirm — upgraded to v3
+    expect(pkg.dependencies['material-ui-confirm']).toMatch(/\^3/);
+
+    // material-ui-image — replaced by mui-image
+    expect(pkg.dependencies['material-ui-image']).toBeUndefined();
+    expect(pkg.dependencies['mui-image']).toBe('^1.0.0');
+
+    // material-ui-popup-state — upgraded to v5
+    expect(pkg.dependencies['material-ui-popup-state']).toMatch(/\^5/);
+
+    // reactour — upgraded to v2
+    expect(pkg.dependencies['reactour']).toMatch(/\^2/);
   });
 
   it('should transform imports in App.jsx', () => {

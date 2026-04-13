@@ -97,4 +97,52 @@ export const thirdPartyMappings = {
     replacedBy: '@mui/x-data-grid',
     replacedVersion: '^6.0.0',
   },
+
+  // @unicef/material-ui-currency-textfield — abandoned, no MUI v5 release
+  '@unicef/material-ui-currency-textfield': {
+    targetVersion: null,
+    notes:
+      'Abandoned package. No MUI v5-compatible release exists. ' +
+      'Replace with react-number-format (already available) combined with a standard MUI TextField.',
+  },
+
+  // material-ui-chip-input — abandoned, replaced by mui-chips-input
+  'material-ui-chip-input': {
+    targetVersion: null,
+    notes:
+      'Abandoned. Replaced by mui-chips-input for MUI v5. ' +
+      'API is similar but not identical — review the mui-chips-input docs.',
+    replacedBy: 'mui-chips-input',
+    replacedVersion: '^2.0.0',
+  },
+
+  // material-ui-confirm — v3+ supports MUI v5
+  'material-ui-confirm': {
+    targetVersion: '^3.0.0',
+    notes:
+      'v3+ supports MUI v5. Minor API changes: ConfirmProvider and useConfirm interface updated.',
+  },
+
+  // material-ui-image — replaced by mui-image
+  'material-ui-image': {
+    targetVersion: null,
+    notes:
+      'No MUI v5-compatible release. Replace with mui-image which has a compatible API.',
+    replacedBy: 'mui-image',
+    replacedVersion: '^1.0.0',
+  },
+
+  // material-ui-popup-state — v5+ supports MUI v5
+  'material-ui-popup-state': {
+    targetVersion: '^5.0.0',
+    notes: 'v5.0.0+ supports MUI v5 (@mui/material peer dependency). Ensure you are on v5+.',
+  },
+
+  // reactour — v2.x removed MUI dependency entirely
+  reactour: {
+    targetVersion: '^2.0.0',
+    notes:
+      'v2.x removed the MUI dependency entirely. ' +
+      'Review breaking API changes in the reactour v2 migration guide before upgrading.',
+  },
 };
