@@ -16,6 +16,13 @@ export const thirdPartyMappings = {
       '@devexpress/dx-react-core': '^4.0.8',
       '@devexpress/dx-react-scheduler': '^4.0.8',
     },
+    peerRequirements: {
+      '@mui/x-date-pickers': '^5.0.15',
+    },
+    peerRequirementNotes:
+      '@devexpress/dx-react-scheduler-material-ui@4.x requires @mui/x-date-pickers@^5. ' +
+      'Pinned to ^5.0.15 to satisfy this peer dependency. ' +
+      'If you need @mui/x-date-pickers@^6+, use --legacy-peer-deps or replace the DevExpress scheduler.',
   },
   // DevExpress Grid
   '@devexpress/dx-react-grid-material-ui': {
@@ -70,9 +77,14 @@ export const thirdPartyMappings = {
   // Formik Material UI
   'formik-material-ui': {
     targetVersion: '^4.0.0',
-    notes: 'Renamed to formik-mui for MUI v5.',
+    notes: 'Renamed to formik-mui for MUI v5. Latest stable is 4.0.0 (v5.x is alpha-only and not published as a stable release).',
     replacedBy: 'formik-mui',
-    replacedVersion: '^5.0.0',
+    replacedVersion: '^4.0.0',
+  },
+  // Formik Material UI Pickers (no stable v5-compatible replacement exists)
+  'formik-material-ui-pickers': {
+    targetVersion: null,
+    notes: 'No stable MUI v5-compatible release exists. Consider migrating to @mui/x-date-pickers directly. Manual migration required.',
   },
   // Material UI Phone Number
   'material-ui-phone-number': {

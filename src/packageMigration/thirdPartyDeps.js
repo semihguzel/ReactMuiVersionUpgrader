@@ -68,6 +68,48 @@ export function migrateThirdPartyPackages(packageJson, scanResult) {
         `${pkg.name}: No automatic migration available. ${pkg.notes || 'Manual review needed.'}`
       );
     }
+
+    // Enforce peer requirements declared by this package (e.g. devexpress needs @mui/x-date-pickers@^5)
+    if (pkg.peerRequirements) {
+      for (const [peerPkg, peerVersion] of Object.entries(pkg.peerRequirements)) {
+        const currentInDeps = modified.dependencies?.[peerPkg];
+        const currentInDev  = modified.devDependencies?.[peerPkg];
+        const current = currentInDeps || currentInDev;
+
+        const peerMajor    = parseInt(peerVersion.replace(/[\^~>=<]/, ''), 10);
+        const currentMajor = current ? parseInt(current.replace(/[\^~>=<]/, ''), 10) : NaN;
+
+        if (!isNaN(currentMajor) && currentMajor > peerMajor) {
+          // Current version is too new — pin down to the peer requirement
+          if (currentInDeps)  modified.dependencies[peerPkg]    = peerVersion;
+          if (currentInDev)   modified.devDependencies[peerPkg] = peerVersion;
+
+          changes.push({
+            type: 'peer-requirement-pin',
+            package: peerPkg,
+            from: current,
+            to: peerVersion,
+            reason: `Required by ${pkg.name}`,
+          });
+        } else if (!current) {
+          // Not present at all — add it
+          if (!modified.dependencies) modified.dependencies = {};
+          modified.dependencies[peerPkg] = peerVersion;
+
+          changes.push({
+            type: 'peer-requirement-add',
+            package: peerPkg,
+            to: peerVersion,
+            reason: `Required by ${pkg.name}`,
+          });
+        }
+
+        warnings.push(
+          pkg.peerRequirementNotes ||
+          `${pkg.name} requires ${peerPkg}@${peerVersion}. Version has been pinned.`
+        );
+      }
+    }
   }
 
   return { packageJson: modified, changes, warnings };

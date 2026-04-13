@@ -59,8 +59,18 @@ describe('Full migration integration test', () => {
     expect(pkg.dependencies['@devexpress/dx-react-scheduler-material-ui']).toMatch(/\^4/);
     expect(pkg.dependencies['@devexpress/dx-react-core']).toMatch(/\^4/);
 
+    // @mui/x-date-pickers should be pinned to ^5 to satisfy devexpress peer dep
+    expect(pkg.dependencies['@mui/x-date-pickers']).toBe('^5.0.15');
+
     // notistack should be upgraded
     expect(pkg.dependencies['notistack']).toMatch(/\^3/);
+
+    // formik-material-ui should be replaced by formik-mui@^4.0.0
+    expect(pkg.dependencies['formik-material-ui']).toBeUndefined();
+    expect(pkg.dependencies['formik-mui']).toBe('^4.0.0');
+
+    // formik-material-ui-pickers should remain (no automatic replacement, only a warning)
+    expect(pkg.dependencies['formik-material-ui-pickers']).toBeDefined();
   });
 
   it('should transform imports in App.jsx', () => {
