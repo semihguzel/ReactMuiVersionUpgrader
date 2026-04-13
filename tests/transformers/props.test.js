@@ -104,6 +104,64 @@ describe('variantDefaults transformer', () => {
     const result = transformVariantDefaults(input, 'test.jsx');
     expect(result.changed).toBe(false);
   });
+
+  it('should not corrupt arrow functions inside JSX props', () => {
+    const input = `import { TextField } from '@mui/material';
+<TextField
+  onChange={(e) => {
+    setValue(e.target.value);
+  }}
+/>`;
+    const result = transformVariantDefaults(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('variant="standard"');
+    // Arrow function must be intact
+    expect(result.source).toContain('(e) => {');
+    expect(result.source).not.toContain('= variant=');
+  });
+
+  it('should handle multi-line tag with arrow function and > in expression', () => {
+    const input = `import { Select } from '@mui/material';
+<Select
+  onChange={(e) => handler(e)}
+  value={count > 0 ? val : ''}
+/>`;
+    const result = transformVariantDefaults(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('variant="standard"');
+    expect(result.source).toContain('(e) => handler(e)');
+    expect(result.source).toContain('count > 0');
+  });
+
+  it('should handle production-complexity TextField with nested arrow and ternary', () => {
+    const input = `import { TextField } from '@mui/material';
+<TextField
+  fullWidth
+  disabled={taskListType === 'inQueue' || isReadOnly}
+  id={x.SapColumnName}
+  label={t('master-data-update:' + x.LanguageKeyText)}
+  value={initialValues[x.SapColumnName] || approverData[x.SapColumnName]}
+  inputProps={{ maxLength: 60 }}
+  name={x.SapColumnName}
+  onChange={(e) => {
+    setInitialValues(prevState => ({
+      ...prevState,
+      [e.target.name]: e.target.value
+    }));
+  }}
+  autoFocus
+  required={x.IsRequired}
+  error={error[x.SapColumnName]}
+  helperText={error[x.SapColumnName] ? t('MandatoryField') : ''}
+/>`;
+    const result = transformVariantDefaults(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('variant="standard"');
+    expect(result.source).toContain('(e) => {');
+    expect(result.source).toContain('prevState => ({');
+    expect(result.source).not.toContain('= variant=');
+    expect(result.source).not.toContain('="standard">');
+  });
 });
 
 // ─── linkUnderline ────────────────────────────────────────────────────────────

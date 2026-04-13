@@ -6,31 +6,33 @@
  * In v5, Link default underline changed to "always".
  * To preserve v4 behavior, we add explicit underline="hover".
  */
+import { scanJSXTags } from '../utils/jsxTagParser.js';
+
 export function transformLinkUnderline(source, filePath) {
   let changed = false;
   const changes = [];
   let result = source;
 
-  // Check if file uses Link from MUI
   if (!result.includes('Link')) return { source, changed: false, changes: [] };
   const hasMuiLink = /import\s+.*\bLink\b.*from\s+['"]@(?:material-ui\/core|mui\/material)/.test(result);
   if (!hasMuiLink) return { source, changed: false, changes: [] };
 
-  // Match Link JSX tags without underline prop
-  const tagPattern = /(<Link\b)([^>]*?)(\/?>)/g;
+  const insertions = [];
 
-  result = result.replace(tagPattern, (match, tagStart, attrs, tagEnd) => {
-    if (/\bunderline\s*=/.test(attrs)) return match;
+  for (const tag of scanJSXTags(result, 'Link')) {
+    if (/\bunderline\s*=/.test(tag.attrText)) continue;
+    insertions.push(tag.closeStart);
+  }
 
+  for (let i = insertions.length - 1; i >= 0; i--) {
+    const pos = insertions[i];
+    result = result.slice(0, pos) + ' underline="hover"' + result.slice(pos);
     changed = true;
-    changes.push({
-      type: 'add-default-underline',
-      component: 'Link',
-      value: 'hover',
-    });
+  }
 
-    return `${tagStart}${attrs} underline="hover"${tagEnd}`;
-  });
+  if (insertions.length > 0) {
+    changes.push({ type: 'add-default-underline', component: 'Link', value: 'hover' });
+  }
 
   return { source: result, changed, changes };
 }

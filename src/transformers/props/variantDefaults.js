@@ -6,6 +6,7 @@
  * In v5, the default variant changed to "outlined".
  * To preserve v4 behavior, we add explicit variant="standard".
  */
+import { scanJSXTags } from '../utils/jsxTagParser.js';
 
 const targetComponents = ['TextField', 'FormControl', 'Select'];
 
@@ -19,33 +20,27 @@ export function transformVariantDefaults(source, filePath) {
   if (!hasMuiImport) return { source, changed: false, changes: [] };
 
   for (const component of targetComponents) {
-    // Check if this component is used in the file
     if (!result.includes(component)) continue;
 
-    // Match JSX opening tags for this component that DON'T already have variant prop
-    // Self-closing: <TextField ... />
-    // Opening: <TextField ...>
-    const tagPattern = new RegExp(
-      `(<${component}\\b)([^>]*?)(\\/?>)`,
-      'g'
-    );
+    // Collect insertion points (closeStart positions) right-to-left so that
+    // inserting text at one position doesn't shift subsequent positions.
+    const insertions = [];
 
-    result = result.replace(tagPattern, (match, tagStart, attrs, tagEnd) => {
-      // Skip if variant is already specified
-      if (/\bvariant\s*=/.test(attrs)) return match;
+    for (const tag of scanJSXTags(result, component)) {
+      if (/\bvariant\s*=/.test(tag.attrText)) continue;
+      insertions.push(tag.closeStart);
+    }
 
-      // Skip if this is a closing tag somehow matched
-      if (match.startsWith('</')) return match;
-
+    // Apply right-to-left so earlier offsets stay valid
+    for (let i = insertions.length - 1; i >= 0; i--) {
+      const pos = insertions[i];
+      result = result.slice(0, pos) + ' variant="standard"' + result.slice(pos);
       changed = true;
-      changes.push({
-        type: 'add-default-variant',
-        component,
-        value: 'standard',
-      });
+    }
 
-      return `${tagStart}${attrs} variant="standard"${tagEnd}`;
-    });
+    if (insertions.length > 0) {
+      changes.push({ type: 'add-default-variant', component, value: 'standard' });
+    }
   }
 
   return { source: result, changed, changes };
