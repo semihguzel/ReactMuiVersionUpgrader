@@ -171,11 +171,19 @@ describe('thirdPartyRenames transformer', () => {
     expect(result.source).toBe(`import MaterialTable from '@material-table/core';`);
   });
 
-  it('should rename material-ui-chip-input to mui-chips-input', () => {
+  it('should convert material-ui-chip-input default import to named with alias', () => {
     const input = `import ChipInput from 'material-ui-chip-input';`;
     const result = transformThirdPartyRenames(input, 'test.jsx');
     expect(result.changed).toBe(true);
-    expect(result.source).toBe(`import ChipInput from 'mui-chips-input';`);
+    // Default export → named export; local alias preserved so JSX needs no changes
+    expect(result.source).toBe(`import { MuiChipsInput as ChipInput } from 'mui-chips-input';`);
+  });
+
+  it('should drop alias when local name already matches the new export name', () => {
+    const input = `import MuiChipsInput from 'material-ui-chip-input';`;
+    const result = transformThirdPartyRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toBe(`import { MuiChipsInput } from 'mui-chips-input';`);
   });
 
   it('should rename material-ui-image to mui-image', () => {

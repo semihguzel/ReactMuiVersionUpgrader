@@ -114,6 +114,12 @@ export const thirdPartyMappings = {
       'API is similar but not identical — review the mui-chips-input docs.',
     replacedBy: 'mui-chips-input',
     replacedVersion: '^2.0.0',
+    // mui-chips-input has no default export; the component is named MuiChipsInput.
+    // Default imports are rewritten to a named import with an alias so the rest
+    // of the file keeps working without further changes:
+    //   import ChipInput from 'material-ui-chip-input'
+    //   → import { MuiChipsInput as ChipInput } from 'mui-chips-input'
+    defaultToNamed: 'MuiChipsInput',
   },
 
   // material-ui-confirm — v3+ supports MUI v5
