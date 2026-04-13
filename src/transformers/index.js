@@ -19,6 +19,7 @@ import { transformColorImports } from './imports/colorImports.js';
 import { transformExpansionToAccordion } from './components/expansionToAccordion.js';
 import { transformGridListToImageList } from './components/gridListToImageList.js';
 import { transformRootRefRemoval } from './components/rootRefRemoval.js';
+import { transformPickerRenames } from './components/pickerRenames.js';
 
 // Prop transformers
 import { transformGenericProps } from './props/genericPropRename.js';
@@ -46,6 +47,7 @@ const transformerPipeline = [
   { name: 'expansionToAccordion', phase: 'components', fn: transformExpansionToAccordion },
   { name: 'gridListToImageList', phase: 'components', fn: transformGridListToImageList },
   { name: 'rootRefRemoval', phase: 'components', fn: transformRootRefRemoval },
+  { name: 'pickerRenames', phase: 'components', fn: transformPickerRenames },
 
   // Phase 3: Prop renames
   { name: 'genericPropRename', phase: 'props', fn: transformGenericProps },

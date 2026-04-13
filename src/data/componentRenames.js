@@ -14,6 +14,13 @@ export const componentRenames = {
 
   // RootRef removed (handled specially)
   // RootRef: { newName: null, removed: true },
+
+  // @material-ui/pickers → @mui/x-date-pickers
+  // KeyboardXxxPicker → XxxPicker (keyboard input is built-in by default in v5)
+  KeyboardDatePicker: { newName: 'DatePicker' },
+  KeyboardTimePicker: { newName: 'TimePicker' },
+  KeyboardDateTimePicker: { newName: 'DateTimePicker' },
+  MuiPickersUtilsProvider: { newName: 'LocalizationProvider' },
 };
 
 // Props that also need renaming when component is renamed
@@ -34,4 +41,7 @@ export const typeRenames = {
   GridListProps: 'ImageListProps',
   GridListTileProps: 'ImageListItemProps',
   GridListTileBarProps: 'ImageListItemBarProps',
+  KeyboardDatePickerProps: 'DatePickerProps',
+  KeyboardTimePickerProps: 'TimePickerProps',
+  KeyboardDateTimePickerProps: 'DateTimePickerProps',
 };

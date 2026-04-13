@@ -2,6 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { transformExpansionToAccordion } from '../../src/transformers/components/expansionToAccordion.js';
 import { transformGridListToImageList } from '../../src/transformers/components/gridListToImageList.js';
 import { transformRootRefRemoval } from '../../src/transformers/components/rootRefRemoval.js';
+import { transformPickerRenames } from '../../src/transformers/components/pickerRenames.js';
 
 describe('expansionToAccordion transformer', () => {
   it('should rename ExpansionPanel to Accordion', () => {
@@ -93,6 +94,80 @@ describe('rootRefRemoval transformer', () => {
   it('should not change files without RootRef', () => {
     const input = `<Button>Click me</Button>`;
     const result = transformRootRefRemoval(input, 'test.jsx');
+    expect(result.changed).toBe(false);
+  });
+});
+
+describe('pickerRenames transformer', () => {
+  it('should rename KeyboardDatePicker to DatePicker', () => {
+    const input = `import { KeyboardDatePicker } from '@mui/x-date-pickers';
+<KeyboardDatePicker value={date} onChange={setDate} />`;
+    const result = transformPickerRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).not.toContain('KeyboardDatePicker');
+    expect(result.source).toContain('DatePicker');
+  });
+
+  it('should rename KeyboardTimePicker to TimePicker', () => {
+    const input = `<KeyboardTimePicker value={time} onChange={setTime} />`;
+    const result = transformPickerRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toBe(`<TimePicker value={time} onChange={setTime} />`);
+  });
+
+  it('should rename KeyboardDateTimePicker to DateTimePicker', () => {
+    const input = `<KeyboardDateTimePicker value={dt} onChange={setDt} />`;
+    const result = transformPickerRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toBe(`<DateTimePicker value={dt} onChange={setDt} />`);
+  });
+
+  it('should rename MuiPickersUtilsProvider to LocalizationProvider', () => {
+    const input = `import { MuiPickersUtilsProvider } from '@mui/x-date-pickers';
+<MuiPickersUtilsProvider utils={DateFnsUtils}>
+  <App />
+</MuiPickersUtilsProvider>`;
+    const result = transformPickerRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).not.toContain('MuiPickersUtilsProvider');
+    expect(result.source).toContain('LocalizationProvider');
+  });
+
+  it('should rename TypeScript prop types', () => {
+    const input = `const props: KeyboardDatePickerProps = {};
+const tProps: KeyboardTimePickerProps = {};
+const dtProps: KeyboardDateTimePickerProps = {};`;
+    const result = transformPickerRenames(input, 'test.tsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('DatePickerProps');
+    expect(result.source).toContain('TimePickerProps');
+    expect(result.source).toContain('DateTimePickerProps');
+    expect(result.source).not.toContain('KeyboardDatePickerProps');
+    expect(result.source).not.toContain('KeyboardTimePickerProps');
+    expect(result.source).not.toContain('KeyboardDateTimePickerProps');
+  });
+
+  it('should handle import specifiers', () => {
+    const input = `import { KeyboardDatePicker, KeyboardTimePicker, KeyboardDateTimePicker, MuiPickersUtilsProvider } from '@mui/x-date-pickers';`;
+    const result = transformPickerRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('DatePicker');
+    expect(result.source).toContain('TimePicker');
+    expect(result.source).toContain('DateTimePicker');
+    expect(result.source).toContain('LocalizationProvider');
+    expect(result.source).not.toContain('Keyboard');
+    expect(result.source).not.toContain('MuiPickersUtilsProvider');
+  });
+
+  it('should not rename plain DatePicker, TimePicker, DateTimePicker', () => {
+    const input = `<DatePicker value={d} /><TimePicker value={t} /><DateTimePicker value={dt} />`;
+    const result = transformPickerRenames(input, 'test.jsx');
+    expect(result.changed).toBe(false);
+  });
+
+  it('should not change files without picker components', () => {
+    const input = `<Button>Click</Button>`;
+    const result = transformPickerRenames(input, 'test.jsx');
     expect(result.changed).toBe(false);
   });
 });
