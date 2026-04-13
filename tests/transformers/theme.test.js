@@ -66,6 +66,31 @@ describe('fadeToAlpha transformer', () => {
     const result = transformFadeToAlpha(input, 'test.js');
     expect(result.changed).toBe(false);
   });
+
+  it('should rename fade import AND all call sites after colorImports fixed the path', () => {
+    // Simulates what the file looks like after colorImports ran:
+    // path is already @mui/material/styles, but `fade` symbol is still there
+    const input = `import { fade } from '@mui/material/styles';
+const a = fade(theme.palette.primary.main, 0.5);
+const b = fade('#fff', 0.1);`;
+    const result = transformFadeToAlpha(input, 'test.js');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('import { alpha }');
+    expect(result.source).toContain('alpha(theme.palette.primary.main, 0.5)');
+    expect(result.source).toContain("alpha('#fff', 0.1)");
+    expect(result.source).not.toContain('fade');
+  });
+
+  it('should rename fade from colorManipulator path before colorImports cleans it up', () => {
+    // The v4 deep path — fadeToAlpha guard must also match colorManipulator
+    const input = `import { fade } from '@material-ui/core/styles/colorManipulator';
+const color = fade(primary, 0.3);`;
+    const result = transformFadeToAlpha(input, 'test.js');
+    expect(result.changed).toBe(true);
+    expect(result.source).toContain('import { alpha }');
+    expect(result.source).toContain('alpha(primary, 0.3)');
+    expect(result.source).not.toContain('fade');
+  });
 });
 
 describe('themeStructure transformer', () => {

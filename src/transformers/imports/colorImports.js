@@ -44,16 +44,15 @@ export function transformColorImports(source, filePath) {
     /import\s+(\{[^}]+\})\s+from\s+(['"])(?:@material-ui\/core|@mui\/material)\/styles\/colorManipulator\2\s*;?/g;
 
   result = result.replace(colorManipulatorPattern, (match, specifiers, q) => {
-    // Rename `fade` → `alpha` inside the specifier list
-    const updatedSpecifiers = specifiers.replace(/\bfade\b/g, 'alpha');
+    // Only fix the module path — leave `fade` as-is so the fadeToAlpha
+    // transformer (Phase 4) can rename both the specifier AND every call site.
     changed = true;
     changes.push({
       type: 'color-manipulator-import-fix',
       from: 'styles/colorManipulator',
       to: '@mui/material/styles',
-      renamed: updatedSpecifiers !== specifiers ? 'fade → alpha' : null,
     });
-    return `import ${updatedSpecifiers} from ${q}@mui/material/styles${q};`;
+    return `import ${specifiers} from ${q}@mui/material/styles${q};`;
   });
 
   return { source: result, changed, changes };

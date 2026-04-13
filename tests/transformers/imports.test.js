@@ -2,6 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { transformPackageRenames } from '../../src/transformers/imports/packageRename.js';
 import { transformLabToCore } from '../../src/transformers/imports/labToCore.js';
 import { transformColorImports } from '../../src/transformers/imports/colorImports.js';
+import { transformThirdPartyRenames } from '../../src/transformers/imports/thirdPartyRenames.js';
 
 describe('packageRename transformer', () => {
   it('should rename @material-ui/core to @mui/material', () => {
@@ -120,24 +121,79 @@ describe('colorImports transformer', () => {
     expect(result.source).toBe(`import { blue } from '@mui/material/colors';`);
   });
 
-  it('should fix colorManipulator deep import from v4 path', () => {
+  it('should fix colorManipulator deep import path from v4 (leave fade for fadeToAlpha)', () => {
     const input = `import { fade, lighten, darken } from '@material-ui/core/styles/colorManipulator';`;
     const result = transformColorImports(input, 'test.jsx');
     expect(result.changed).toBe(true);
-    expect(result.source).toBe(`import { alpha, lighten, darken } from '@mui/material/styles';`);
+    // Path is fixed; `fade` symbol stays so fadeToAlpha can rename it + all call sites
+    expect(result.source).toBe(`import { fade, lighten, darken } from '@mui/material/styles';`);
   });
 
-  it('should fix colorManipulator deep import already at @mui path (packageRename already ran)', () => {
+  it('should fix colorManipulator path already at @mui (packageRename already ran)', () => {
     const input = `import { fade, emphasize } from '@mui/material/styles/colorManipulator';`;
     const result = transformColorImports(input, 'test.jsx');
     expect(result.changed).toBe(true);
-    expect(result.source).toBe(`import { alpha, emphasize } from '@mui/material/styles';`);
+    expect(result.source).toBe(`import { fade, emphasize } from '@mui/material/styles';`);
   });
 
-  it('should fix colorManipulator import without fade (no rename needed)', () => {
+  it('should fix colorManipulator path when fade is not present', () => {
     const input = `import { lighten, darken, getContrastRatio } from '@material-ui/core/styles/colorManipulator';`;
     const result = transformColorImports(input, 'test.jsx');
     expect(result.changed).toBe(true);
     expect(result.source).toBe(`import { lighten, darken, getContrastRatio } from '@mui/material/styles';`);
+  });
+});
+
+describe('thirdPartyRenames transformer', () => {
+  it('should rename formik-material-ui imports to formik-mui', () => {
+    const input = `import { fieldToTextField } from 'formik-material-ui';`;
+    const result = transformThirdPartyRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toBe(`import { fieldToTextField } from 'formik-mui';`);
+  });
+
+  it('should rename multiple formik-material-ui imports', () => {
+    const input = [
+      `import { fieldToTextField } from 'formik-material-ui';`,
+      `import { CheckboxWithLabel } from 'formik-material-ui';`,
+      `import { Switch } from 'formik-material-ui';`,
+    ].join('\n');
+    const result = transformThirdPartyRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).not.toContain('formik-material-ui');
+    expect(result.source.match(/formik-mui/g)).toHaveLength(3);
+  });
+
+  it('should rename material-table to @material-table/core', () => {
+    const input = `import MaterialTable from 'material-table';`;
+    const result = transformThirdPartyRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toBe(`import MaterialTable from '@material-table/core';`);
+  });
+
+  it('should rename material-ui-chip-input to mui-chips-input', () => {
+    const input = `import ChipInput from 'material-ui-chip-input';`;
+    const result = transformThirdPartyRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toBe(`import ChipInput from 'mui-chips-input';`);
+  });
+
+  it('should rename material-ui-image to mui-image', () => {
+    const input = `import Image from 'material-ui-image';`;
+    const result = transformThirdPartyRenames(input, 'test.jsx');
+    expect(result.changed).toBe(true);
+    expect(result.source).toBe(`import Image from 'mui-image';`);
+  });
+
+  it('should not change packages that only need a version bump (no replacedBy)', () => {
+    const input = `import { useConfirm } from 'material-ui-confirm';`;
+    const result = transformThirdPartyRenames(input, 'test.jsx');
+    expect(result.changed).toBe(false);
+  });
+
+  it('should not change unrelated imports', () => {
+    const input = `import React from 'react';`;
+    const result = transformThirdPartyRenames(input, 'test.jsx');
+    expect(result.changed).toBe(false);
   });
 });

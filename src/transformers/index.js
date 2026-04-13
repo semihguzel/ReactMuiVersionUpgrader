@@ -14,6 +14,7 @@ import { v8TransformerPipeline } from './v8/index.js';
 import { transformPackageRenames } from './imports/packageRename.js';
 import { transformLabToCore } from './imports/labToCore.js';
 import { transformColorImports } from './imports/colorImports.js';
+import { transformThirdPartyRenames } from './imports/thirdPartyRenames.js';
 
 // Component transformers
 import { transformExpansionToAccordion } from './components/expansionToAccordion.js';
@@ -42,6 +43,7 @@ const transformerPipeline = [
   { name: 'packageRename', phase: 'imports', fn: transformPackageRenames },
   { name: 'labToCore', phase: 'imports', fn: transformLabToCore },
   { name: 'colorImports', phase: 'imports', fn: transformColorImports },
+  { name: 'thirdPartyRenames', phase: 'imports', fn: transformThirdPartyRenames },
 
   // Phase 2: Component renames
   { name: 'expansionToAccordion', phase: 'components', fn: transformExpansionToAccordion },
