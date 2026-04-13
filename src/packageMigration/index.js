@@ -86,6 +86,7 @@ function migratePackageJsonV8(scanResult, options = {}) {
     changes: allChanges,
     warnings: allWarnings,
     packageJson: currentPkg,
+    autoDetectedMuiDependents: scanResult.autoDetectedMuiDependents || [],
   };
 }
 
@@ -113,6 +114,7 @@ function migratePackageJsonV7(scanResult, options = {}) {
     changes: allChanges,
     warnings: allWarnings,
     packageJson: currentPkg,
+    autoDetectedMuiDependents: scanResult.autoDetectedMuiDependents || [],
   };
 }
 
@@ -142,6 +144,7 @@ function migratePackageJsonV6(scanResult, options = {}) {
     changes: allChanges,
     warnings: allWarnings,
     packageJson: currentPkg,
+    autoDetectedMuiDependents: scanResult.autoDetectedMuiDependents || [],
   };
 }
 

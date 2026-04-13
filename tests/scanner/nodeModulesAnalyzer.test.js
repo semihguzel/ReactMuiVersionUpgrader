@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync, rmSync, existsSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { detectMuiV4Dependents } from '../../src/scanner/nodeModulesAnalyzer.js';
+import { detectMuiV4Dependents, detectMuiPeerDepIncompatible } from '../../src/scanner/nodeModulesAnalyzer.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fakeRoot = join(__dirname, 'fixtures', 'fake-project');
@@ -42,6 +42,34 @@ beforeAll(() => {
     name: 'icons-pkg',
     version: '2.0.0',
     dependencies: { '@material-ui/icons': '^4.11.0' },
+  });
+
+  // v5-locked-pkg: peer dep caret-locked to @mui/material v5 (breaks on v6)
+  writePkg('v5-locked-pkg', {
+    name: 'v5-locked-pkg',
+    version: '1.0.0',
+    peerDependencies: { '@mui/material': '^5.0.0' },
+  });
+
+  // v6-locked-pkg: peer dep caret-locked to @mui/material v6 (breaks on v7)
+  writePkg('v6-locked-pkg', {
+    name: 'v6-locked-pkg',
+    version: '2.0.0',
+    peerDependencies: { '@mui/material': '^6.1.0' },
+  });
+
+  // v5-permissive-pkg: >= range — compatible with v6 and above
+  writePkg('v5-permissive-pkg', {
+    name: 'v5-permissive-pkg',
+    version: '1.5.0',
+    peerDependencies: { '@mui/material': '>=5.0.0' },
+  });
+
+  // no-mui-peer-pkg: no @mui/material peer dep at all
+  writePkg('no-mui-peer-pkg', {
+    name: 'no-mui-peer-pkg',
+    version: '4.0.0',
+    peerDependencies: { react: '>=17' },
   });
 });
 
@@ -98,5 +126,54 @@ describe('detectMuiV4Dependents', () => {
     // 'ghost-pkg' is in the dep list but not installed
     const results = detectMuiV4Dependents(fakeRoot, ['ghost-pkg']);
     expect(results).toEqual([]);
+  });
+});
+
+describe('detectMuiPeerDepIncompatible', () => {
+  it('flags a package caret-locked to the source major (v5→v6)', () => {
+    const results = detectMuiPeerDepIncompatible(fakeRoot, ['v5-locked-pkg'], 5);
+    expect(results).toHaveLength(1);
+    expect(results[0].name).toBe('v5-locked-pkg');
+    expect(results[0].dependsOn).toBe('@mui/material');
+    expect(results[0].requiredVersion).toBe('^5.0.0');
+    expect(results[0].isPeer).toBe(true);
+  });
+
+  it('flags a package caret-locked to the source major (v6→v7)', () => {
+    const results = detectMuiPeerDepIncompatible(fakeRoot, ['v6-locked-pkg'], 6);
+    expect(results).toHaveLength(1);
+    expect(results[0].name).toBe('v6-locked-pkg');
+    expect(results[0].requiredVersion).toBe('^6.1.0');
+  });
+
+  it('does NOT flag a package locked to a different major', () => {
+    // v6-locked-pkg is ^6, but we are migrating from v5 — not relevant
+    const results = detectMuiPeerDepIncompatible(fakeRoot, ['v6-locked-pkg'], 5);
+    expect(results).toHaveLength(0);
+  });
+
+  it('does NOT flag a permissive >= range', () => {
+    const results = detectMuiPeerDepIncompatible(fakeRoot, ['v5-permissive-pkg'], 5);
+    expect(results).toHaveLength(0);
+  });
+
+  it('does NOT flag a package with no @mui/material peer dep', () => {
+    const results = detectMuiPeerDepIncompatible(fakeRoot, ['no-mui-peer-pkg'], 5);
+    expect(results).toHaveLength(0);
+  });
+
+  it('returns empty array when node_modules does not exist', () => {
+    const results = detectMuiPeerDepIncompatible('/nonexistent/path', ['any-pkg'], 5);
+    expect(results).toEqual([]);
+  });
+
+  it('handles a mix returning only the locked packages', () => {
+    const results = detectMuiPeerDepIncompatible(
+      fakeRoot,
+      ['v5-locked-pkg', 'v5-permissive-pkg', 'no-mui-peer-pkg'],
+      5
+    );
+    expect(results).toHaveLength(1);
+    expect(results[0].name).toBe('v5-locked-pkg');
   });
 });

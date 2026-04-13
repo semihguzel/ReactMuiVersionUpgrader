@@ -2,7 +2,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { packageMappings } from '../data/packageMappings.js';
 import { thirdPartyMappings } from '../data/thirdPartyMappings.js';
-import { detectMuiV4Dependents } from './nodeModulesAnalyzer.js';
+import { detectMuiV4Dependents, detectMuiPeerDepIncompatible } from './nodeModulesAnalyzer.js';
 import { v5PackageNames, v6PackageVersions, v6PeerRequirements } from '../data/v6/packageMappings.js';
 import { v6PackageNamesForV7, v7PackageVersions, v7PeerRequirements } from '../data/v7/packageMappings.js';
 import { v7PackageNamesForV8, v8PackageVersions, v8PeerRequirements } from '../data/v8/packageMappings.js';
@@ -198,6 +198,17 @@ function analyzeForV7(packageJsonPath, raw, packageJson, allDeps) {
     }
   }
 
+  // Auto-detect third-party packages locked to MUI v6 peer dep
+  const targetPathV7 = packageJsonPath.replace(/[/\\]package\.json$/, '');
+  const autoDetectedV7 = detectMuiPeerDepIncompatible(targetPathV7, Object.keys(allDeps), 6);
+  result.autoDetectedMuiDependents = autoDetectedV7;
+  for (const pkg of autoDetectedV7) {
+    result.warnings.push(
+      `${pkg.name}@${pkg.installedVersion}: peer dep ${pkg.dependsOn}@"${pkg.requiredVersion}" ` +
+      `is locked to MUI v6 and will break after upgrading to v7. Manual upgrade or replacement needed.`
+    );
+  }
+
   return result;
 }
 
@@ -253,6 +264,17 @@ function analyzeForV8(packageJsonPath, raw, packageJson, allDeps) {
     }
   }
 
+  // Auto-detect third-party packages locked to MUI v7 peer dep
+  const targetPathV8 = packageJsonPath.replace(/[/\\]package\.json$/, '');
+  const autoDetectedV8 = detectMuiPeerDepIncompatible(targetPathV8, Object.keys(allDeps), 7);
+  result.autoDetectedMuiDependents = autoDetectedV8;
+  for (const pkg of autoDetectedV8) {
+    result.warnings.push(
+      `${pkg.name}@${pkg.installedVersion}: peer dep ${pkg.dependsOn}@"${pkg.requiredVersion}" ` +
+      `is locked to MUI v7 and will break after upgrading to v8/v9. Manual upgrade or replacement needed.`
+    );
+  }
+
   return result;
 }
 
@@ -305,6 +327,17 @@ function analyzeForV6(packageJsonPath, raw, packageJson, allDeps) {
         `TypeScript ${tsVersion} detected. MUI v6 requires TypeScript >= ${v6PeerRequirements.typescript}. Please upgrade.`
       );
     }
+  }
+
+  // Auto-detect third-party packages locked to MUI v5 peer dep
+  const targetPathV6 = packageJsonPath.replace(/[/\\]package\.json$/, '');
+  const autoDetectedV6 = detectMuiPeerDepIncompatible(targetPathV6, Object.keys(allDeps), 5);
+  result.autoDetectedMuiDependents = autoDetectedV6;
+  for (const pkg of autoDetectedV6) {
+    result.warnings.push(
+      `${pkg.name}@${pkg.installedVersion}: peer dep ${pkg.dependsOn}@"${pkg.requiredVersion}" ` +
+      `is locked to MUI v5 and will break after upgrading to v6. Manual upgrade or replacement needed.`
+    );
   }
 
   return result;

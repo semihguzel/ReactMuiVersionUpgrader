@@ -9,7 +9,13 @@
  *
  * This transformer warns when TextField or Select components are found
  * without an explicit `variant` prop.
+ *
+ * Uses scanJSXTags (brace-depth-aware parser) instead of a `[^>]*?` regex to
+ * correctly handle arrow functions inside JSX props, e.g.:
+ *   onChange={(e) => { ... }}
  */
+import { scanJSXTags } from '../../utils/jsxTagParser.js';
+
 export function transformVariantDefaultsV6(source, filePath) {
   const changes = [];
   const warnings = [];
@@ -19,12 +25,8 @@ export function transformVariantDefaultsV6(source, filePath) {
   for (const component of COMPONENTS) {
     if (!source.includes(`<${component}`)) continue;
 
-    const tagRegex = new RegExp(`<${component}(?![A-Za-z])((?:[^>]|\\n)*?)(?=/>|>)`, 'g');
-    let match;
-    while ((match = tagRegex.exec(source)) !== null) {
-      const attrs = match[1];
-      // Check if variant prop is present
-      if (!/\bvariant=/.test(attrs)) {
+    for (const tag of scanJSXTags(source, component)) {
+      if (!/\bvariant\s*=/.test(tag.attrText)) {
         warnings.push(
           `${filePath}: <${component}> has no explicit \`variant\` prop. ` +
           'In MUI v6 the default variant is "outlined". ' +
