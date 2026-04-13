@@ -12,6 +12,7 @@ export function generateReport(targetPath, packageResult, transformResult, optio
     targetPath,
     migrationVersion,
     dryRun: !!options.dryRun,
+    autoDetectedMuiDependents: packageResult.autoDetectedMuiDependents || [],
     summary: {
       filesProcessed: transformResult.filesProcessed,
       filesModified: transformResult.filesModified,
@@ -80,6 +81,19 @@ function printConsoleReport(report) {
           break;
       }
     }
+  }
+
+  // Auto-detected incompatible packages
+  if (report.autoDetectedMuiDependents?.length > 0) {
+    console.log(chalk.bold.red('\nAuto-detected Incompatible Packages (internally require @material-ui/core):'));
+    for (const pkg of report.autoDetectedMuiDependents) {
+      const tag = pkg.isPeer ? 'peerDep' : 'dep';
+      console.log(
+        `  ${chalk.red('✗')} ${chalk.bold(pkg.name)}@${pkg.installedVersion} ` +
+        `requires ${pkg.dependsOn}@${pkg.requiredVersion} (${tag})`
+      );
+    }
+    console.log(chalk.gray('  → Known packages are auto-fixed above; unknown ones need manual upgrade.'));
   }
 
   // Transformation summary by type

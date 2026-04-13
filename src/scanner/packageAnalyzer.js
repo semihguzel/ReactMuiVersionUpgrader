@@ -2,6 +2,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { packageMappings } from '../data/packageMappings.js';
 import { thirdPartyMappings } from '../data/thirdPartyMappings.js';
+import { detectMuiV4Dependents } from './nodeModulesAnalyzer.js';
 import { v5PackageNames, v6PackageVersions, v6PeerRequirements } from '../data/v6/packageMappings.js';
 import { v6PackageNamesForV7, v7PackageVersions, v7PeerRequirements } from '../data/v7/packageMappings.js';
 import { v7PackageNamesForV8, v8PackageVersions, v8PeerRequirements } from '../data/v8/packageMappings.js';
@@ -111,6 +112,34 @@ function analyzeForV45(packageJsonPath, raw, packageJson, allDeps) {
         `Unknown @material-ui related package: ${depName}. Manual review needed.`
       );
     }
+  }
+
+  // Auto-detect any installed package that internally depends on MUI v4
+  const targetPath = packageJsonPath.replace(/[/\\]package\.json$/, '');
+  const autoDetected = detectMuiV4Dependents(targetPath, Object.keys(allDeps));
+  result.autoDetectedMuiDependents = autoDetected;
+
+  for (const pkg of autoDetected) {
+    // Skip packages the curated list already covers
+    const alreadyKnown =
+      result.thirdPartyPackages.some(p => p.name === pkg.name) ||
+      !!packageMappings[pkg.name];
+    if (alreadyKnown) continue;
+
+    result.thirdPartyPackages.push({
+      name: pkg.name,
+      currentVersion: allDeps[pkg.name],
+      targetVersion: null,
+      notes:
+        `Auto-detected: internally requires ${pkg.dependsOn}@${pkg.requiredVersion}. ` +
+        `This package will break after migration. Manual upgrade or replacement needed.`,
+      autoDetected: true,
+      isDev: !!packageJson.devDependencies?.[pkg.name],
+    });
+
+    // Drop the generic "Unknown @material-ui related package" warning for the
+    // same package — the auto-detected entry is more specific
+    result.warnings = result.warnings.filter(w => !w.includes(pkg.name));
   }
 
   return result;

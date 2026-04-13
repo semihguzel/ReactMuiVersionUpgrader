@@ -58,6 +58,7 @@ function migratePackageJsonV45(scanResult, options = {}) {
     changes: allChanges,
     warnings: allWarnings,
     packageJson: currentPkg,
+    autoDetectedMuiDependents: scanResult.autoDetectedMuiDependents || [],
   };
 }
 

@@ -64,9 +64,10 @@ export function migrateThirdPartyPackages(packageJson, scanResult) {
         }
       }
     } else {
-      warnings.push(
-        `${pkg.name}: No automatic migration available. ${pkg.notes || 'Manual review needed.'}`
-      );
+      const msg = pkg.autoDetected
+        ? `${pkg.name}@${pkg.currentVersion}: ${pkg.notes}`
+        : `${pkg.name}: No automatic migration available. ${pkg.notes || 'Manual review needed.'}`;
+      warnings.push(msg);
     }
 
     // Enforce peer requirements declared by this package (e.g. devexpress needs @mui/x-date-pickers@^5)
